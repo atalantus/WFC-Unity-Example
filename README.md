@@ -2,6 +2,7 @@
 This Unity example project utilizes the wave-function-collapse algorithm to procedurally generate levels.
 
 ## About this project
+Using Unity version `2019.1.14f1`.
 
 ## Resources
 Special thanks to [Oskar Stålberg](https://twitter.com/OskSta) for [his talk](https://www.youtube.com/watch?v=0bcZb-SsnrA) about this algorithm and it's implementation in the game Bad North.
