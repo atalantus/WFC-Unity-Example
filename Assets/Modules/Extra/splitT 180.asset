@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6b52706175f8f5b48b0efe34527adabd, type: 3}
+  m_Name: splitT 180
+  m_EditorClassIdentifier: 
+  moduleGO: {fileID: 8075983548388508506, guid: 659f2626ef94235498e4e2d394befbf3,
+    type: 3}
+  edgeConnections: 05000000010000000500000005000000
