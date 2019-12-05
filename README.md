@@ -1,5 +1,5 @@
-# Wave-function-collapse algorithm with Unity Example
-A Unity project utilizing the wave-function-collapse algorithm to procedurally generate levels.
+# Wave-function-collapse algorithm with Unity
+This Unity example project utilizes the wave-function-collapse algorithm to procedurally generate levels.
 
 ## About this project
 
