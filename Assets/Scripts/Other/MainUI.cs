@@ -22,7 +22,7 @@ public class MainUI : MonoBehaviour
 
         grid.RemoveGrid();
         grid.GenerateGrid();
-        LevelGenerator.Instance.GenerateLevelWFC(ref grid._cells, grid.seed != -1 ? grid.seed : Environment.TickCount);
+        LevelGenerator.Instance.GenerateLevelWFC(ref grid.cells, grid.seed != -1 ? grid.seed : Environment.TickCount);
         
         cameraController.AdjustCamera(grid.width, grid.height);
         

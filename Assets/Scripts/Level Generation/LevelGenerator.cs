@@ -18,6 +18,9 @@ namespace LevelGeneration
         /// </summary>
         public static LevelGenerator Instance => _instance ?? (_instance = new LevelGenerator());
 
+        /// <summary>
+        /// Stores the cells in a heap having the closest cell to being solved as first element
+        /// </summary>
         public Heap<Cell> OrderedCells;
 
         private LevelGenerator()
@@ -26,7 +29,7 @@ namespace LevelGeneration
 
         /// <summary>
         /// Wave-function-collapse algorithm
-        /// TODO: Multithreading?
+        /// TODO: Could be multithreaded to increase performance
         /// </summary>
         /// <param name="cells">The grid`s cells</param>
         /// <param name="seed">RNG seed</param>
@@ -51,8 +54,10 @@ namespace LevelGeneration
 
             Debug.LogWarning("Start Wave-function-collapse algorithm");
 
+            // Make sure the level fits our initial constraints
             ApplyInitialConstraints(ref cells);
 
+            // Wave-function-collapse Algorithm
             while (true)
             {
                 //Debug.Log("Starting another iteration! Removing next module.");
@@ -196,7 +201,7 @@ namespace LevelGeneration
         }
 
         /// <summary>
-        /// Initial constraint: Place start and goal module
+        /// Initial constraint: Place one start and one goal module
         /// </summary>
         /// <param name="cells">The grid`s cells</param>
         private void StartGoalConstraint(ref Cell[,] cells)

@@ -2,6 +2,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace LevelGeneration
 {
@@ -28,7 +29,7 @@ namespace LevelGeneration
         /// <summary>
         /// Cells matrix ([width, height])
         /// </summary>
-        public Cell[,] _cells;
+        public Cell[,] cells;
 
         /// <summary>
         /// <see cref="LevelGenerator"/>
@@ -47,15 +48,18 @@ namespace LevelGeneration
             GenerateGrid();
 
             // Wave-function-collapse algorithm
-            _levelGenerator.GenerateLevelWFC(ref _cells, seed != -1 ? seed : Environment.TickCount);
+            _levelGenerator.GenerateLevelWFC(ref cells, seed != -1 ? seed : Environment.TickCount);
         }
 
+        /// <summary>
+        /// Generates the two-dimensional grid
+        /// </summary>
         public void GenerateGrid()
         {
             if (width > 0 && height > 0)
             {
                 // Generate grid
-                _cells = new Cell[width, height];
+                cells = new Cell[width, height];
 
                 var scale = cellPrefab.transform.localScale;
                 var origin = transform.position;
@@ -73,14 +77,14 @@ namespace LevelGeneration
                     var cellObj = Instantiate(cellPrefab, curPos, Quaternion.identity, gameObject.transform);
                     cellObj.name = $"({i}, {j})";
                     var cell = cellObj.GetComponent<Cell>();
-                    _cells[i, j] = cell;
+                    cells[i, j] = cell;
                 }
 
                 // Assign neighbours for every cell
                 for (int i = 0; i < width; i++)
                 for (int j = 0; j < height; j++)
                 {
-                    var cell = _cells[i, j];
+                    var cell = cells[i, j];
                     for (int k = 0; k < 4; k++)
                     {
                         int x = -1, y = -1;
@@ -112,7 +116,7 @@ namespace LevelGeneration
                         }
                         else
                         {
-                            cell.neighbourCells[k] = _cells[x, y];
+                            cell.neighbourCells[k] = cells[x, y];
                         }
                     }
                 }
@@ -123,6 +127,9 @@ namespace LevelGeneration
             }
         }
 
+        /// <summary>
+        /// Destroys the current grid
+        /// </summary>
         public void RemoveGrid()
         {
             foreach (Transform child in gameObject.transform)
@@ -134,10 +141,10 @@ namespace LevelGeneration
         /// <summary>
         /// Checks if the grid is valid
         /// </summary>
-        /// <returns></returns>
+        /// <returns>true if the grid is valid</returns>
         public bool CheckGrid()
         {
-            var notMatchingCells = _levelGenerator.CheckGeneratedLevel(ref _cells);
+            var notMatchingCells = _levelGenerator.CheckGeneratedLevel(ref cells);
 
             return notMatchingCells.Count == 0;
         }

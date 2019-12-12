@@ -19,7 +19,7 @@ namespace LevelGeneration
         /// <summary>
         /// Was the module object already instantiated
         /// </summary>
-        private bool isCellSet;
+        private bool _isCellSet;
 
         /// <summary>
         /// Holds the indices of the still possible modules
@@ -85,6 +85,7 @@ namespace LevelGeneration
                 RemoveModule(removingModules[i]);
             }
 
+            // Check if the cell has only one possible module left
             CheckSetCell();
         }
 
@@ -150,6 +151,10 @@ namespace LevelGeneration
             LevelGenerator.Instance.OrderedCells.UpdateItem(this);
         }
 
+        /// <summary>
+        /// Force assigns this cell one specific module and automatically removes all other possibilities.
+        /// </summary>
+        /// <param name="moduleIndex">The module to assign</param>
         public void SetSpecialModule(int moduleIndex)
         {
             possibleModulesIndices = new List<int> {moduleIndex};
@@ -181,9 +186,12 @@ namespace LevelGeneration
             var newModule = Instantiate(module.moduleGO, transform.position,
                 Quaternion.identity, transform);
 
-            isCellSet = true;
+            _isCellSet = true;
         }
 
+        /// <summary>
+        /// Checks if the cell is solved
+        /// </summary>
         private void CheckSetCell()
         {
             // Only set cell if one final module is left
@@ -200,17 +208,17 @@ namespace LevelGeneration
         {
             //Debug.Log("Set cell!", gameObject);
             
-            if (isCellSet) return;
+            if (_isCellSet) return;
 
             var newModule = Instantiate(ModuleManager.Instance.modules[possibleModulesIndices[0]].moduleGO,
                 transform.position,
                 Quaternion.identity, transform);
 
-            isCellSet = true;
+            _isCellSet = true;
         }
 
         /// <summary>
-        /// Compares two cells.
+        /// Compares two cells using their solved score
         /// </summary>
         /// <param name="other">Cell to compare</param>
         /// <returns></returns>
