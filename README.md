@@ -12,7 +12,7 @@ Using Unity version `2019.1.14f1`.
 ### The Algorithm
 
 **Note:**
-This implementation of the WFC-algorithm is not complete and it might resolve adjacent modules which edge types aren't actually fitting!
+This implementation of the WFC-algorithm is not complete and it might resolve adjacent modules which edge types aren't actually fitting when the given module set is not complete! (Note that the module set in this project is complete)
 Im still experimenting with this algorithm and currently developing a free Unity-tool for using WFC.
 
 If you have any further questions always feel free to hit me up on [twitter](https://twitter.com/atalanthus).
