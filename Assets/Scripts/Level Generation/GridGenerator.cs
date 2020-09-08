@@ -29,32 +29,12 @@ namespace LevelGeneration
         /// <summary>
         /// Cells matrix ([width, height])
         /// </summary>
-        public Cell[,] cells;
-
-        /// <summary>
-        /// <see cref="LevelGenerator"/>
-        /// </summary>
-        private LevelGenerator _levelGenerator;
-
-        /// <summary>
-        /// RNG seed
-        /// </summary>
-        public int seed;
-
-        private void Awake()
-        {
-            _levelGenerator = LevelGenerator.Instance;
-
-            GenerateGrid();
-
-            // Wave-function-collapse algorithm
-            _levelGenerator.GenerateLevelWFC(ref cells, seed != -1 ? seed : Environment.TickCount);
-        }
+        protected Cell[,] cells;
 
         /// <summary>
         /// Generates the two-dimensional grid
         /// </summary>
-        public void GenerateGrid()
+        protected void GenerateGrid(LevelGenerator levelGenerator)
         {
             if (width <= 0 || height <= 0)
             {
@@ -82,6 +62,8 @@ namespace LevelGeneration
                 var cellObj = Instantiate(cellPrefab, curPos, Quaternion.identity, gameObject.transform);
                 cellObj.name = $"({x}, {z})";
                 var cell = cellObj.GetComponent<Cell>();
+                cell.levelGenerator = levelGenerator;
+                cell.PopulateCell();
                 cells[x, z] = cell;
 
                 /*
@@ -97,9 +79,9 @@ namespace LevelGeneration
 
                 if (z > 0)
                 {
-                    var backCell = cells[x, z - 1];
-                    cell.neighbours[2] = backCell;
-                    backCell.neighbours[0] = cell;
+                    var bottomCell = cells[x, z - 1];
+                    cell.neighbours[0] = bottomCell;
+                    bottomCell.neighbours[2] = cell;
                 }
             }
         }
@@ -107,23 +89,12 @@ namespace LevelGeneration
         /// <summary>
         /// Destroys the current grid
         /// </summary>
-        public void RemoveGrid()
+        protected void RemoveGrid()
         {
             foreach (Transform child in gameObject.transform)
             {
                 Destroy(child.gameObject);
             }
-        }
-
-        /// <summary>
-        /// Checks if the grid is valid
-        /// </summary>
-        /// <returns>true if the grid is valid</returns>
-        public bool CheckGrid()
-        {
-            var notMatchingCells = _levelGenerator.CheckGeneratedLevel(ref cells);
-
-            return notMatchingCells.Count == 0;
         }
     }
 }

@@ -9,67 +9,73 @@ namespace LevelGeneration
     /// <summary>
     /// Generates level using the wave-function-collapse algorithm
     /// </summary>
-    public class LevelGenerator
+    public class LevelGenerator : GridGenerator
     {
-        private static LevelGenerator _instance;
-
         /// <summary>
-        /// The Level Generator
+        /// The modules
         /// </summary>
-        public static LevelGenerator Instance => _instance ?? (_instance = new LevelGenerator());
+        public List<Module> modules;
+
+        public Module startModule;
+
+        public Module goalModule;
 
         /// <summary>
         /// Stores the cells in a heap having the closest cell to being solved as first element
         /// </summary>
         public Heap<Cell> OrderedCells;
 
-        private LevelGenerator()
+        /// <summary>
+        /// RNG seed
+        /// </summary>
+        public int seed;
+
+        private void Start()
         {
+            // Wave-function-collapse algorithm
+            GenerateLevel();
         }
 
         /// <summary>
         /// Wave-function-collapse algorithm
-        /// TODO: Could be multithreaded to increase performance
         /// </summary>
-        /// <param name="cells">The grid`s cells</param>
-        /// <param name="seed">RNG seed</param>
-        public void GenerateLevelWFC(ref Cell[,] cells, int seed)
+        public void GenerateLevel()
         {
+            RemoveGrid();
+            GenerateGrid(this);
+
+            var finalSeed = seed != -1 ? seed : Environment.TickCount;
+
             // Set RNG seed
-            Random.InitState(seed);
+            Random.InitState(finalSeed);
 
             // Instantiate cells heap
             OrderedCells = new Heap<Cell>(cells.GetLength(0) * cells.GetLength(1));
 
-            for (int i = 0; i < cells.GetLength(0); i++)
+            for (var i = 0; i < cells.GetLength(0); i++)
+            for (var j = 0; j < cells.GetLength(1); j++)
             {
-                for (int j = 0; j < cells.GetLength(1); j++)
-                {
-                    OrderedCells.Add(cells[i, j]);
-                }
+                OrderedCells.Add(cells[i, j]);
             }
 
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            Debug.Log("Start Wave-function-collapse algorithm");
-
             // Make sure the level fits our initial constraints
-            ApplyInitialConstraints(ref cells);
+            ApplyInitialConstraints();
 
             // Wave-function-collapse Algorithm
             while (true)
             {
-                //Debug.Log("Starting another iteration! Removing next module.");
-
                 // Remove finished cells from heap
                 while (OrderedCells.Count > 0)
                 {
                     var cell = OrderedCells.GetFirst();
 
-                    if (cell.SolvedScore == 1)
+                    if (cell.possibleModules.Count == 1)
                     {
-                        OrderedCells.RemoveFirst();
+                        if (cell.isCellSet) OrderedCells.RemoveFirst();
+                        else cell.SetModule(cell.possibleModules[0]);
                     }
                     else
                     {
@@ -78,10 +84,11 @@ namespace LevelGeneration
                 }
 
                 // Remove random module from cell
+                // TODO: Instead of removing a random module, set a random module
                 if (OrderedCells.Count > 0)
                 {
                     var cell = OrderedCells.GetFirst();
-                    cell.RemoveModule(cell.possibleModulesIndices[Random.Range(0, cell.possibleModulesIndices.Count)]);
+                    cell.RemoveModule(cell.possibleModules[Random.Range(0, cell.possibleModules.Count)]);
                 }
                 else
                 {
@@ -92,110 +99,49 @@ namespace LevelGeneration
 
             stopwatch.Stop();
             Debug.Log(
-                $"Wave-function-collapse algorithm finished in {stopwatch.Elapsed.TotalMilliseconds}ms (Seed: {seed})");
-        }
-
-        /// <summary>
-        /// Checks if the cells of the generated level matches with each other
-        /// </summary>
-        /// <param name="cells">The grid`s cells</param>
-        /// <returns>List of not matching cells` (x, y)-coordinates</returns>
-        public List<Tuple<int, int>> CheckGeneratedLevel(ref Cell[,] cells)
-        {
-            var notMatchingCells = new List<Tuple<int, int>>();
-
-            for (int i = 0; i < cells.GetLength(0); i++)
-            {
-                for (int j = 0; j < cells.GetLength(1); j++)
-                {
-                    var cell = cells[i, j];
-                    var bCell = cell.neighbours[0];
-                    var rCell = cell.neighbours[1];
-
-                    var matchesNeighbours = true;
-
-                    if (bCell != null)
-                    {
-                        if (ModuleManager.Instance.modules[cell.possibleModulesIndices[0]].edgeConnections[0] !=
-                            ModuleManager.Instance.modules[bCell.possibleModulesIndices[0]].edgeConnections[2])
-                        {
-                            matchesNeighbours = false;
-                            Debug.LogWarning($"CheckGeneratedLevel | ({i}, {j}) not matching with ({i}, {j + 1})");
-                        }
-                    }
-
-                    if (rCell != null)
-                    {
-                        if (ModuleManager.Instance.modules[cell.possibleModulesIndices[0]].edgeConnections[1] !=
-                            ModuleManager.Instance.modules[rCell.possibleModulesIndices[0]].edgeConnections[3])
-                        {
-                            matchesNeighbours = false;
-                            Debug.LogWarning($"CheckGeneratedLevel | ({i}, {j}) not matching with ({i + 1}, {j})");
-                        }
-                    }
-
-                    if (!matchesNeighbours) notMatchingCells.Add(new Tuple<int, int>(i, j));
-                }
-            }
-
-            return notMatchingCells;
+                $"Wave-function-collapse algorithm finished in {stopwatch.Elapsed.TotalMilliseconds}ms (Seed: {finalSeed})");
         }
 
         /// <summary>
         /// Resolve all initial constraints
         /// </summary>
-        /// <param name="cells">The grid`s cells</param>
-        private void ApplyInitialConstraints(ref Cell[,] cells)
+        private void ApplyInitialConstraints()
         {
             Debug.Log("Resolve initial constraints");
 
-            StartGoalConstraint(ref cells);
-            BorderOutsideConstraint(ref cells);
+            StartGoalConstraint();
+            BorderOutsideConstraint();
         }
 
         /// <summary>
         /// Initial constraint: There can only be border on the outside
         /// </summary>
-        /// <param name="cells">The grid`s cells</param>
-        private void BorderOutsideConstraint(ref Cell[,] cells)
+        private void BorderOutsideConstraint()
         {
-            var edgeTypes = (Module.EdgeConnectionTypes[]) Enum.GetValues(typeof(Module.EdgeConnectionTypes));
+            var bottomFilter = new EdgeFilter(2, Module.EdgeConnectionTypes.Block, true);
+            var topFilter = new EdgeFilter(0, Module.EdgeConnectionTypes.Block, true);
+            var leftFilter = new EdgeFilter(1, Module.EdgeConnectionTypes.Block, true);
+            var rightFilter = new EdgeFilter(3, Module.EdgeConnectionTypes.Block, true);
 
-            for (int i = 0; i < 2; i++)
+            // filter bottom and top cells
+            for (var i = 0; i < 2; i++)
             {
-                i = (cells.GetLength(0) - 1) * i;
+                var z = i * (height - 1);
 
-                for (int j = 0; j < cells.GetLength(1); j++)
+                for (var x = 0; x < width; x++)
                 {
-                    var cell = cells[i, j];
-
-                    foreach (var edgeType in edgeTypes)
-                    {
-                        if (edgeType == Module.EdgeConnectionTypes.Block) continue;
-
-                        var edgeFilter = new EdgeFilter(i == 0 ? 1 : 3, edgeType);
-
-                        cell.FilterCell(edgeFilter);
-                    }
+                    cells[x, z].FilterCell(i == 0 ? bottomFilter : topFilter);
                 }
             }
 
-            for (int j = 0; j < 2; j++)
+            // filter left and right cells
+            for (var i = 0; i < 2; i++)
             {
-                j = (cells.GetLength(1) - 1) * j;
+                var x = i * (width - 1);
 
-                for (int i = 0; i < cells.GetLength(0); i++)
+                for (var z = 0; z < height; z++)
                 {
-                    var cell = cells[i, j];
-
-                    foreach (var edgeType in edgeTypes)
-                    {
-                        if (edgeType == Module.EdgeConnectionTypes.Block) continue;
-
-                        var edgeFilter = new EdgeFilter(j == 0 ? 0 : 2, edgeType);
-
-                        cell.FilterCell(edgeFilter);
-                    }
+                    cells[x, z].FilterCell(i == 0 ? leftFilter : rightFilter);
                 }
             }
         }
@@ -203,38 +149,19 @@ namespace LevelGeneration
         /// <summary>
         /// Initial constraint: Place one start and one goal module
         /// </summary>
-        /// <param name="cells">The grid`s cells</param>
-        private void StartGoalConstraint(ref Cell[,] cells)
+        private void StartGoalConstraint()
         {
-            var startCell = cells[Random.Range(0, cells.GetLength(0)), Random.Range(1, cells.GetLength(1))];
-            Cell goalCell = null;
-            
-            startCell.SetSpecialModule(0);
+            var startCell = cells[Random.Range(0, cells.GetLength(0)), Random.Range(0, cells.GetLength(1) - 1)];
+            Cell goalCell;
+
+            startCell.SetModule(startModule);
 
             do
             {
-                goalCell = cells[Random.Range(0, cells.GetLength(0)), Random.Range(0, cells.GetLength(1) - 1)];
+                goalCell = cells[Random.Range(0, cells.GetLength(0)), Random.Range(1, cells.GetLength(1))];
             } while (goalCell == startCell);
-            
-            goalCell.SetSpecialModule(1);
 
-            // SimpleRemove start and goal modules from other cells
-            for (int i = 0; i < cells.GetLength(0); i++)
-            {
-                for (int j = 0; j < cells.GetLength(1); j++)
-                {
-                    var cell = cells[i, j];
-
-                    if (cell != startCell && cell != goalCell)
-                    {
-                        // Remove all special modules
-                        for (int k = 0; k < 2; k++)
-                        {
-                            cell.SimpleRemoveModule(k);
-                        }
-                    }
-                }
-            }
+            goalCell.SetModule(goalModule);
         }
     }
 }
