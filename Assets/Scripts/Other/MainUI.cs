@@ -1,14 +1,11 @@
 ﻿using System;
-using System.Collections;
-using System.Collections.Generic;
 using LevelGeneration;
 using UnityEngine;
 using UnityEngine.UI;
-using Grid = LevelGeneration.Grid;
 
 public class MainUI : MonoBehaviour
 {
-    public Grid grid;
+    public GridGenerator grid;
     public CameraController cameraController;
     private bool isGenerating;
 

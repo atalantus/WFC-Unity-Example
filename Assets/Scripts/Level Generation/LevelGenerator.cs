@@ -52,7 +52,7 @@ namespace LevelGeneration
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            Debug.LogWarning("Start Wave-function-collapse algorithm");
+            Debug.Log("Start Wave-function-collapse algorithm");
 
             // Make sure the level fits our initial constraints
             ApplyInitialConstraints(ref cells);
@@ -91,7 +91,7 @@ namespace LevelGeneration
             }
 
             stopwatch.Stop();
-            Debug.LogWarning(
+            Debug.Log(
                 $"Wave-function-collapse algorithm finished in {stopwatch.Elapsed.TotalMilliseconds}ms (Seed: {seed})");
         }
 
@@ -109,8 +109,8 @@ namespace LevelGeneration
                 for (int j = 0; j < cells.GetLength(1); j++)
                 {
                     var cell = cells[i, j];
-                    var bCell = cell.neighbourCells[0];
-                    var rCell = cell.neighbourCells[1];
+                    var bCell = cell.neighbours[0];
+                    var rCell = cell.neighbours[1];
 
                     var matchesNeighbours = true;
 
@@ -147,7 +147,7 @@ namespace LevelGeneration
         /// <param name="cells">The grid`s cells</param>
         private void ApplyInitialConstraints(ref Cell[,] cells)
         {
-            Debug.LogWarning("Resolve initial constraints");
+            Debug.Log("Resolve initial constraints");
 
             StartGoalConstraint(ref cells);
             BorderOutsideConstraint(ref cells);

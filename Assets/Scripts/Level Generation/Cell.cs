@@ -32,10 +32,10 @@ namespace LevelGeneration
         private ModuleManager _moduleManager;
 
         /// <summary>
-        /// The neighbouring cells starting with the bottom one going counter clockwise (bottom, right, top, left)
+        /// The neighbouring cells starting with the bottom one going counter clockwise (forward, right, back, left)
         /// Can be null if cell is on the grid`s edge
         /// </summary>
-        public Cell[] neighbourCells = new Cell[4];
+        public Cell[] neighbours = new Cell[4];
 
         /// <summary>
         /// Heap Index
@@ -110,7 +110,7 @@ namespace LevelGeneration
             for (int j = 0; j < 4; j++)
             {
                 // Only check if cell has a neighbour on this edge
-                if (neighbourCells[j] == null) continue;
+                if (neighbours[j] == null) continue;
 
                 var edgeType = module.edgeConnections[j];
                 var lastEdgeType = true;
@@ -131,7 +131,7 @@ namespace LevelGeneration
                     
                     // Populate edge changes to neighbour cell
                     var edgeFilter = new EdgeFilter(j, edgeType);
-                    neighbourCells[j].FilterCell(edgeFilter);
+                    neighbours[j].FilterCell(edgeFilter);
                 }
             }
 
@@ -169,7 +169,7 @@ namespace LevelGeneration
             // Propagate changes to neighbours
             for (int i = 0; i < 4; i++)
             {
-                if (neighbourCells[i] == null) continue;
+                if (neighbours[i] == null) continue;
 
                 for (int j = 0; j < edgeTypes.Length; j++)
                 {
@@ -178,7 +178,7 @@ namespace LevelGeneration
                         // This edge type was removed from this edge
                         // Populate edge changes to neighbour cell
                         var edgeFilter = new EdgeFilter(i, edgeTypes[j]);
-                        neighbourCells[i].FilterCell(edgeFilter);
+                        neighbours[i].FilterCell(edgeFilter);
                     }
                 }
             }
