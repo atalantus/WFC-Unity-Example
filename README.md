@@ -20,5 +20,7 @@ Other helpful resources about WFC:
 - http://oskarstalberg.com/game/wave/wave.html
 - https://robertheaton.com/2018/12/17/wavefunction-collapse-algorithm/
 
+Resource about path generation using WFC:
+- https://twitter.com/ExUtumno/status/1024314661951467521
 
 All the models in this project are from [Kenney's](https://twitter.com/KenneyNL) [Minigolf Kit](https://www.kenney.nl/assets/minigolf-kit).
