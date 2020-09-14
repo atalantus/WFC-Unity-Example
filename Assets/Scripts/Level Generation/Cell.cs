@@ -1,6 +1,5 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -28,13 +27,17 @@ namespace LevelGeneration
 
         public void PopulateCell()
         {
-            // At the beginning every module is possible
+            // at the beginning every module is possible
             for (var i = 0; i < levelGenerator.modules.Count; i++)
             {
                 possibleModules.Add(levelGenerator.modules[i]);
             }
         }
 
+        /// <summary>
+        /// Applies an <see cref="EdgeFilter"/> to this cell.
+        /// </summary>
+        /// <param name="filter">The filter to apply.</param>
         public void FilterCell(EdgeFilter filter)
         {
             if (possibleModules.Count == 1) return;
@@ -97,6 +100,7 @@ namespace LevelGeneration
             }
         }
 
+
         public void SetModule(Module module)
         {
             possibleModules = new List<Module> {module};
@@ -121,8 +125,27 @@ namespace LevelGeneration
                 if (neighbours[i] == null) continue;
 
                 // Populate edge changes to neighbour cell
-                var edgeFilter = new EdgeFilter(i, module.edgeConnections[i], true);
-                neighbours[i].FilterCell(edgeFilter);
+                neighbours[i].FilterCell(new EdgeFilter(i, module.edgeConnections[i], true));
+            }
+
+            Instantiate(module.moduleGO, transform.position, Quaternion.identity, transform);
+
+            isCellSet = true;
+        }
+
+        public void ForceSetModule(Module module)
+        {
+            possibleModules = new List<Module> {module};
+
+            // check if it fits to already set neighbour cells
+            for (var i = 0; i < neighbours.Length; i++)
+            {
+                if (neighbours[i] == null || !neighbours[i].isCellSet) continue;
+
+                if (module.edgeConnections[i] != neighbours[i].possibleModules[0].edgeConnections[(i + 2) % 4])
+                    Debug.LogError(
+                        $"Setting module {module} would not fit already set neighbour {neighbours[i].gameObject}!",
+                        gameObject);
             }
 
             Instantiate(module.moduleGO, transform.position, Quaternion.identity, transform);
@@ -131,10 +154,11 @@ namespace LevelGeneration
         }
 
         /// <summary>
-        /// Compares two cells using their solved score
+        /// Compares two cells using their solved score.
+        /// TODO: Refactor
         /// </summary>
         /// <param name="other">Cell to compare</param>
-        /// <returns></returns>
+        /// <returns>Comparison value</returns>
         public int CompareTo(Cell other)
         {
             var compare = possibleModules.Count.CompareTo(other.possibleModules.Count);

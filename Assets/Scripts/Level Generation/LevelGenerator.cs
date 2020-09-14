@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using Debug = UnityEngine.Debug;
 using Random = UnityEngine.Random;
 
@@ -75,7 +76,7 @@ namespace LevelGeneration
                     if (cell.possibleModules.Count == 1)
                     {
                         if (cell.isCellSet) OrderedCells.RemoveFirst();
-                        else cell.SetModule(cell.possibleModules[0]);
+                        else cell.ForceSetModule(cell.possibleModules[0]);
                     }
                     else
                     {
@@ -84,11 +85,10 @@ namespace LevelGeneration
                 }
 
                 // Remove random module from cell
-                // TODO: Instead of removing a random module, set a random module
                 if (OrderedCells.Count > 0)
                 {
                     var cell = OrderedCells.GetFirst();
-                    cell.RemoveModule(cell.possibleModules[Random.Range(0, cell.possibleModules.Count)]);
+                    cell.SetModule(cell.possibleModules[Random.Range(0, cell.possibleModules.Count)]);
                 }
                 else
                 {
@@ -107,8 +107,6 @@ namespace LevelGeneration
         /// </summary>
         private void ApplyInitialConstraints()
         {
-            Debug.Log("Resolve initial constraints");
-
             StartGoalConstraint();
             BorderOutsideConstraint();
         }
