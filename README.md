@@ -3,23 +3,13 @@ This Unity example project utilizes the wave-function-collapse algorithm to proc
 
 [![Demo image](./images/Demo0.png)](https://www.atalantus.de/projects/games/wfc/index.html)
 
+### [Try it out here!](https://www.atalantus.de/projects/games/wfc/index.html)
+
 ## About this project
 Using Unity version `2019.1.14f1`.
 
-### [Try it out here!](https://www.atalantus.de/projects/games/wfc/index.html)
-
-
-### The Algorithm
-
 **Note:**
-This implementation of the WFC-algorithm is not complete and it might resolve adjacent modules which edge types aren't actually fitting when the given module set is not complete! (Note that the module set in this project is complete)
-Im still experimenting with this algorithm and currently developing a free Unity-tool for using WFC.
-
-If you have any further questions always feel free to hit me up on [twitter](https://twitter.com/atalanthus).
-
-
-![WFC Flowchart](./images/wfc-flowchart.svg)
-
+This implementation of the WFC-algorithm does not include any error correction but since the module set in this project is complete the algorithm will not run into any error state.
 
 ## Resources
 Special credits to [Oskar Stålberg](https://twitter.com/OskSta) for [his talk](https://www.youtube.com/watch?v=0bcZb-SsnrA) about this algorithm and it's implementation in the game Bad North.
