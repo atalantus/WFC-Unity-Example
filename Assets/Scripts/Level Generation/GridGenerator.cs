@@ -27,12 +27,12 @@ namespace LevelGeneration
         public GameObject cellPrefab;
 
         /// <summary>
-        /// Cells matrix ([width, height])
+        /// Cells matrix ([width, height]).
         /// </summary>
         protected Cell[,] cells;
 
         /// <summary>
-        /// Generates the two-dimensional grid
+        /// Generates the two-dimensional grid.
         /// </summary>
         protected void GenerateGrid(LevelGenerator levelGenerator)
         {
@@ -42,7 +42,7 @@ namespace LevelGeneration
                 return;
             }
 
-            // Generate grid
+            // generate grid
             cells = new Cell[width, height];
 
             var scale = cellPrefab.transform.localScale;
@@ -58,7 +58,7 @@ namespace LevelGeneration
             {
                 var curPos = new Vector3(bottomLeft.x + x * scale.x, bottomLeft.y, bottomLeft.z + z * scale.z);
 
-                // Create new cell
+                // create new cell
                 var cellObj = Instantiate(cellPrefab, curPos, Quaternion.identity, gameObject.transform);
                 cellObj.name = $"({x}, {z})";
                 var cell = cellObj.GetComponent<Cell>();
@@ -67,7 +67,7 @@ namespace LevelGeneration
                 cells[x, z] = cell;
 
                 /*
-                 * assign neighbours
+                 * Assign neighbours
                  */
 
                 if (x > 0)
@@ -87,7 +87,7 @@ namespace LevelGeneration
         }
 
         /// <summary>
-        /// Destroys the current grid
+        /// Destroys the current grid.
         /// </summary>
         protected void RemoveGrid()
         {

@@ -1,5 +1,4 @@
-﻿using System;
-using LevelGeneration;
+﻿using LevelGeneration;
 using UnityEngine;
 using UnityEngine.UI;
 

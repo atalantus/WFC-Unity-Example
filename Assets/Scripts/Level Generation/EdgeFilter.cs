@@ -21,7 +21,8 @@
 
         /// <summary>
         /// The edges`s direction.
-        /// (bottom, right, top, left)
+        /// 
+        /// [bottom, right, top, left]
         /// </summary>
         private readonly int _edgeDirection;
 
@@ -32,6 +33,11 @@
             _isInclusive = isInclusive;
         }
 
+        /// <summary>
+        /// Checks if a <see cref="Module"/> matches this filter.
+        /// </summary>
+        /// <param name="module">The <see cref="Module"/>.</param>
+        /// <returns>True if the <see cref="Module"/> matches this filter.</returns>
         public bool CheckModule(Module module)
         {
             var edge = (_edgeDirection + 2) % 4;

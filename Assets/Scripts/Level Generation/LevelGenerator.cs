@@ -2,43 +2,52 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
+using UnityEngine;
 using Debug = UnityEngine.Debug;
 using Random = UnityEngine.Random;
 
 namespace LevelGeneration
 {
     /// <summary>
-    /// Generates level using the wave-function-collapse algorithm
+    /// Generates level using the wave-function-collapse algorithm.
     /// </summary>
     public class LevelGenerator : GridGenerator
     {
         /// <summary>
-        /// The modules
+        /// The modules.
         /// </summary>
         public List<Module> modules;
 
+        /// <summary>
+        /// The start module.
+        /// </summary>
         public Module startModule;
 
+        /// <summary>
+        /// The goal module.
+        /// </summary>
         public Module goalModule;
 
         /// <summary>
-        /// Stores the cells in a heap having the closest cell to being solved as first element
+        /// Stores the cells in a heap having the closest cell to being solved as first element.
         /// </summary>
-        public Heap<Cell> OrderedCells;
+        public Heap<Cell> orderedCells;
 
         /// <summary>
-        /// RNG seed
+        /// RNG seed.
+        ///
+        /// If set to -1 a random seed will be selected for every level generation.
         /// </summary>
+        [Tooltip("If set to -1 a random seed will be selected for every level generation.")]
         public int seed;
 
         private void Start()
         {
-            // Wave-function-collapse algorithm
             GenerateLevel();
         }
 
         /// <summary>
-        /// Wave-function-collapse algorithm
+        /// Wave-function-collapse algorithm.
         /// </summary>
         public void GenerateLevel()
         {
@@ -47,63 +56,56 @@ namespace LevelGeneration
 
             var finalSeed = seed != -1 ? seed : Environment.TickCount;
 
-            // Set RNG seed
             Random.InitState(finalSeed);
 
-            // Instantiate cells heap
-            OrderedCells = new Heap<Cell>(cells.GetLength(0) * cells.GetLength(1));
+            // instantiate cells heap
+            orderedCells = new Heap<Cell>(cells.GetLength(0) * cells.GetLength(1));
 
             for (var i = 0; i < cells.GetLength(0); i++)
             for (var j = 0; j < cells.GetLength(1); j++)
             {
-                OrderedCells.Add(cells[i, j]);
+                orderedCells.Add(cells[i, j]);
             }
 
             var stopwatch = new Stopwatch();
             stopwatch.Start();
 
-            // Make sure the level fits our initial constraints
+            // make sure the level fits the initial constraints
             ApplyInitialConstraints();
 
-            // Wave-function-collapse Algorithm
-            while (true)
+            // wave-function-collapse algorithm
+            while (orderedCells.Count > 0)
             {
-                // Remove finished cells from heap
-                while (OrderedCells.Count > 0)
-                {
-                    var cell = OrderedCells.GetFirst();
+                // get cell that is closest to being solved (can also already be solved)
+                var cell = orderedCells.GetFirst();
 
-                    if (cell.possibleModules.Count == 1)
-                    {
-                        if (cell.isCellSet) OrderedCells.RemoveFirst();
-                        else cell.ForceSetModule(cell.possibleModules[0]);
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-
-                // Remove random module from cell
-                if (OrderedCells.Count > 0)
+                if (cell.possibleModules.Count == 1)
                 {
-                    var cell = OrderedCells.GetFirst();
-                    cell.SetModule(cell.possibleModules[Random.Range(0, cell.possibleModules.Count)]);
+                    // cell is already solved -> remove finished cell from heap
+                    cell.isFinal = true;
+                    orderedCells.RemoveFirst();
                 }
                 else
                 {
-                    // Finished
-                    break;
+                    // set a random module for this cell
+                    cell.SetModule(cell.possibleModules[Random.Range(0, cell.possibleModules.Count)]);
                 }
             }
 
             stopwatch.Stop();
             Debug.Log(
                 $"Wave-function-collapse algorithm finished in {stopwatch.Elapsed.TotalMilliseconds}ms (Seed: {finalSeed})");
+
+            // instantiate module game objects
+            foreach (var cell in cells)
+            {
+                var t = cell.transform;
+                Instantiate(cell.possibleModules[0].moduleGO, t.position, Quaternion.identity, t);
+            }
         }
 
         /// <summary>
-        /// Resolve all initial constraints
+        /// Resolve all initial constraints.
         /// </summary>
         private void ApplyInitialConstraints()
         {
@@ -112,7 +114,7 @@ namespace LevelGeneration
         }
 
         /// <summary>
-        /// Initial constraint: There can only be border on the outside
+        /// Initial constraint: There can only be border on the outside.
         /// </summary>
         private void BorderOutsideConstraint()
         {
@@ -121,7 +123,7 @@ namespace LevelGeneration
             var leftFilter = new EdgeFilter(1, Module.EdgeConnectionTypes.Block, true);
             var rightFilter = new EdgeFilter(3, Module.EdgeConnectionTypes.Block, true);
 
-            // filter bottom and top cells
+            // filter bottom and top cells for only border
             for (var i = 0; i < 2; i++)
             {
                 var z = i * (height - 1);
@@ -132,7 +134,7 @@ namespace LevelGeneration
                 }
             }
 
-            // filter left and right cells
+            // filter left and right cells for only border
             for (var i = 0; i < 2; i++)
             {
                 var x = i * (width - 1);
@@ -145,7 +147,7 @@ namespace LevelGeneration
         }
 
         /// <summary>
-        /// Initial constraint: Place one start and one goal module
+        /// Initial constraint: Place one start and one goal module.
         /// </summary>
         private void StartGoalConstraint()
         {
