@@ -1,56 +1,38 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using LevelGeneration;
+﻿using LevelGeneration;
 using UnityEngine;
 using UnityEngine.UI;
-using Grid = LevelGeneration.Grid;
 
 public class MainUI : MonoBehaviour
 {
-    public Grid grid;
+    public LevelGenerator levelGenerator;
     public CameraController cameraController;
-    private bool isGenerating;
+
+    private bool _isGenerating;
 
     public Text widthText;
     public Text heightText;
 
     public void Generate()
     {
-        if (isGenerating) return;
-        isGenerating = true;
+        if (_isGenerating) return;
+        _isGenerating = true;
 
-        grid.RemoveGrid();
-        grid.GenerateGrid();
-        LevelGenerator.Instance.GenerateLevelWFC(ref grid.cells, grid.seed != -1 ? grid.seed : Environment.TickCount);
-        
-        cameraController.AdjustCamera(grid.width, grid.height);
-        
-        var valid = grid.CheckGrid();
-        if (!valid) Debug.LogError("Invalid Level!");
+        levelGenerator.GenerateLevel();
 
-        isGenerating = false;
+        cameraController.AdjustCamera(levelGenerator.width, levelGenerator.height);
+
+        _isGenerating = false;
     }
 
     public void ChangeWidth(float width)
     {
-        grid.width = Mathf.RoundToInt(width);
+        levelGenerator.width = Mathf.RoundToInt(width);
         widthText.text = width.ToString();
     }
 
     public void ChangeHeight(float height)
     {
-        grid.height = Mathf.RoundToInt(height);
+        levelGenerator.height = Mathf.RoundToInt(height);
         heightText.text = height.ToString();
     }
-
-    /*
-    public void CheckLevel()
-    {
-        var valid = grid.CheckGrid();
-
-        if (!valid) Debug.LogError("Invalid Level!");
-        else Debug.Log("Valid Level!");
-    }
-    */
 }

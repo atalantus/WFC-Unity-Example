@@ -1,230 +1,164 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
 namespace LevelGeneration
 {
     /// <summary>
-    /// Acts as placeholder for the modules possibility space
+    /// A cell inside the level`s grid.
     /// </summary>
     public class Cell : MonoBehaviour, IHeapItem<Cell>
     {
         /// <summary>
-        /// Solved score
+        /// Has the decision of the final module already been propagated.
+        ///
+        /// NOTE:
+        /// This is in fact different then just having <code>Count</code> of <see cref="possibleModules"/> 1!
+        ///
+        /// For example a cell's possibility space can be given only one module from the start.
+        /// In this case <code>Count</code> of <see cref="possibleModules"/> is already 1 but the decision to chose
+        /// this only model`s object as object for the cell has not been propagated yet.
         /// </summary>
-        public int SolvedScore => possibleModulesIndices.Count;
+        public bool isFinal;
 
         /// <summary>
-        /// Was the module object already instantiated
+        /// The possible <see cref="Module"/> objects. (Possibility space)
         /// </summary>
-        private bool _isCellSet;
+        public List<Module> possibleModules;
 
         /// <summary>
-        /// Holds the indices of the still possible modules
+        /// The adjacent <see cref="Cell"/> objects inside the grid.
+        /// Element can be null if the cell is on the grid`s edge.
+        /// 
+        /// [bottom, right, top, left]
         /// </summary>
-        public List<int> possibleModulesIndices;
+        public Cell[] neighbours = new Cell[4];
 
-        /// <summary>
-        /// <see cref="ModuleManager"/>
-        /// </summary>
-        private ModuleManager _moduleManager;
+        public LevelGenerator levelGenerator;
 
-        /// <summary>
-        /// The neighbouring cells starting with the bottom one going counter clockwise (bottom, right, top, left)
-        /// Can be null if cell is on the grid`s edge
-        /// </summary>
-        public Cell[] neighbourCells = new Cell[4];
-
-        /// <summary>
-        /// Heap Index
-        /// </summary>
         public int HeapIndex { get; set; }
 
         private void Awake()
         {
-            _moduleManager = ModuleManager.Instance;
-            possibleModulesIndices = new List<int>();
+            possibleModules = new List<Module>();
+        }
 
-            // At the beginning every module is possible
-            for (int i = 0; i < _moduleManager.modules.Count; i++)
+        public void PopulateCell()
+        {
+            // at the beginning every module is possible
+            for (var i = 0; i < levelGenerator.modules.Count; i++)
             {
-                possibleModulesIndices.Add(i);
+                possibleModules.Add(levelGenerator.modules[i]);
             }
         }
 
         /// <summary>
-        /// Filters a cell for a given edge filter
+        /// Applies an <see cref="EdgeFilter"/> to this cell.
         /// </summary>
-        /// <param name="edgeFilter">Edge filter</param>
-        public void FilterCell(EdgeFilter edgeFilter)
+        /// <param name="filter">The filter to apply.</param>
+        public void FilterCell(EdgeFilter filter)
         {
-            //Debug.Log($"FilterCell({edgeFilter.EdgeIndex}, {edgeFilter.FilterType.ToString()})", gameObject);
+            if (possibleModules.Count == 1) return;
 
-            if (SolvedScore == 1) return;
+            var removingModules = new List<Module>();
 
-            var removingModules = new List<int>();
-
-            // Filter possible Modules list for a given filter
-            for (int i = 0; i < possibleModulesIndices.Count; i++)
+            // filter possible modules list
+            for (var i = 0; i < possibleModules.Count; i++)
             {
-                var module = _moduleManager.modules[possibleModulesIndices[i]];
-                var isImpossible = module.CheckModule(edgeFilter);
-
-                if (isImpossible)
-                {
-                    // Remove module
-                    removingModules.Add(possibleModulesIndices[i]);
-                }
+                if (filter.CheckModule(possibleModules[i])) removingModules.Add(possibleModules[i]);
             }
 
-            // Now remove filtered modules
-            for (int i = 0; i < removingModules.Count; i++)
+            // remove filtered modules
+            for (var i = 0; i < removingModules.Count; i++)
             {
                 RemoveModule(removingModules[i]);
             }
-
-            // Check if the cell has only one possible module left
-            CheckSetCell();
         }
 
         /// <summary>
-        /// Checks if the removing module had the last edge type of any kind for this cell and if so populates the changes to the affected neighbour cell.
-        /// Than removes module from <see cref="possibleModulesIndices"/>
+        /// Removes a <see cref="Module"/> from <see cref="possibleModules"/>
+        /// checking if it was the last one on any edge of a specific edge type and
+        /// if so propagating the changes to the affected neighbour.
         /// </summary>
-        /// <param name="moduleIndex">Index of the removing module in <see cref="ModuleManager.modules"/></param>
-        public void RemoveModule(int moduleIndex)
+        /// <param name="module">The <see cref="Module"/> to remove.</param>
+        public void RemoveModule(Module module)
         {
-            // Check module`s edge types
-            var module = _moduleManager.modules[moduleIndex];
+            // remove module from possibility space
+            possibleModules.Remove(module);
 
-            // Remove module from possibility space
-            possibleModulesIndices.Remove(moduleIndex);
+            // update item on the heap
+            levelGenerator.orderedCells.UpdateItem(this);
 
-            // Update item on the heap
-            LevelGenerator.Instance.OrderedCells.UpdateItem(this);
-
-            //Debug.Log($"{gameObject.name} | RemoveModule({module.moduleGO.name})", gameObject);
-
-            for (int j = 0; j < 4; j++)
+            for (var j = 0; j < neighbours.Length; j++)
             {
-                // Only check if cell has a neighbour on this edge
-                if (neighbourCells[j] == null) continue;
+                // only check if cell has a neighbour on this edge
+                if (neighbours[j] == null) continue;
 
                 var edgeType = module.edgeConnections[j];
-                var lastEdgeType = true;
+                var lastWithEdgeType = true;
 
-                // Search in other possible modules for the same edge type
-                for (int i = 0; i < possibleModulesIndices.Count; i++)
+                // search in other possible modules for the same edge type
+                for (var i = 0; i < possibleModules.Count; i++)
                 {
-                    if (_moduleManager.modules[possibleModulesIndices[i]].edgeConnections[j] == edgeType)
+                    if (possibleModules[i].edgeConnections[j] == edgeType)
                     {
-                        lastEdgeType = false;
+                        lastWithEdgeType = false;
                         break;
                     }
                 }
 
-                if (lastEdgeType)
+                if (lastWithEdgeType)
                 {
-                    //Debug.Log($"{gameObject.name} | Last edge({j}, {edgeType.ToString()})", gameObject);
-                    
-                    // Populate edge changes to neighbour cell
-                    var edgeFilter = new EdgeFilter(j, edgeType);
-                    neighbourCells[j].FilterCell(edgeFilter);
+                    // populate edge changes to neighbour cell
+                    var edgeFilter = new EdgeFilter(j, edgeType, false);
+                    neighbours[j].FilterCell(edgeFilter);
                 }
             }
-
-            CheckSetCell();
         }
 
         /// <summary>
-        /// Removes a module without populating possible changes to neighbouring cells
+        /// Assigns this cell a specific <see cref="Module"/> removing others.
         /// </summary>
-        /// <param name="moduleIndex">Index of the removing module in <see cref="ModuleManager.modules"/></param>
-        public void SimpleRemoveModule(int moduleIndex)
+        /// <param name="module">The <see cref="Module"/>.</param>
+        public void SetModule(Module module)
         {
-            // Remove module from possibility space
-            possibleModulesIndices.Remove(moduleIndex);
-            
-            // Update item on the heap
-            LevelGenerator.Instance.OrderedCells.UpdateItem(this);
-        }
+            possibleModules = new List<Module> {module};
 
-        /// <summary>
-        /// Force assigns this cell one specific module and automatically removes all other possibilities.
-        /// </summary>
-        /// <param name="moduleIndex">The module to assign</param>
-        public void SetSpecialModule(int moduleIndex)
-        {
-            possibleModulesIndices = new List<int> {moduleIndex};
+            // update item on the heap
+            levelGenerator.orderedCells.UpdateItem(this);
 
-            var module = ModuleManager.Instance.modules[moduleIndex];
-
-            // Update item on the heap
-            LevelGenerator.Instance.OrderedCells.UpdateItem(this);
-            
-            var edgeTypes = (Module.EdgeConnectionTypes[]) Enum.GetValues(typeof(Module.EdgeConnectionTypes));
-            
-            // Propagate changes to neighbours
-            for (int i = 0; i < 4; i++)
+            // check if it fits to already set neighbour cells
+            for (var i = 0; i < neighbours.Length; i++)
             {
-                if (neighbourCells[i] == null) continue;
+                if (neighbours[i] == null || !neighbours[i].isFinal) continue;
 
-                for (int j = 0; j < edgeTypes.Length; j++)
-                {
-                    if (edgeTypes[j] != module.edgeConnections[i])
-                    {
-                        // This edge type was removed from this edge
-                        // Populate edge changes to neighbour cell
-                        var edgeFilter = new EdgeFilter(i, edgeTypes[j]);
-                        neighbourCells[i].FilterCell(edgeFilter);
-                    }
-                }
+                if (module.edgeConnections[i] != neighbours[i].possibleModules[0].edgeConnections[(i + 2) % 4])
+                    Debug.LogError(
+                        $"Setting module {module} would not fit already set neighbour {neighbours[i].gameObject}!",
+                        gameObject);
             }
 
-            var newModule = Instantiate(module.moduleGO, transform.position,
-                Quaternion.identity, transform);
+            // propagate changes to neighbours
+            for (var i = 0; i < neighbours.Length; i++)
+            {
+                if (neighbours[i] == null) continue;
 
-            _isCellSet = true;
+                // populate edge changes to neighbour cell
+                neighbours[i].FilterCell(new EdgeFilter(i, module.edgeConnections[i], true));
+            }
+
+            isFinal = true;
         }
 
         /// <summary>
-        /// Checks if the cell is solved
+        /// Compares two cells using their solved score.
+        /// TODO: Refactor. Is the extra randomness necessary?
         /// </summary>
-        private void CheckSetCell()
-        {
-            // Only set cell if one final module is left
-            if (SolvedScore == 1) SetCell();
-            else if (SolvedScore <= 0)
-                Debug.LogError($"Impossible Map! No fitting module could be found. solvedScore: {SolvedScore}",
-                    gameObject);
-        }
-
-        /// <summary>
-        /// Assigns the final module to the cell
-        /// </summary>
-        private void SetCell()
-        {
-            //Debug.Log("Set cell!", gameObject);
-            
-            if (_isCellSet) return;
-
-            var newModule = Instantiate(ModuleManager.Instance.modules[possibleModulesIndices[0]].moduleGO,
-                transform.position,
-                Quaternion.identity, transform);
-
-            _isCellSet = true;
-        }
-
-        /// <summary>
-        /// Compares two cells using their solved score
-        /// </summary>
-        /// <param name="other">Cell to compare</param>
-        /// <returns></returns>
+        /// <param name="other">Cell to compare.</param>
+        /// <returns>Comparison value.</returns>
         public int CompareTo(Cell other)
         {
-            var compare = SolvedScore.CompareTo(other.SolvedScore);
+            var compare = possibleModules.Count.CompareTo(other.possibleModules.Count);
             if (compare == 0)
             {
                 var r = Random.Range(1, 3);
