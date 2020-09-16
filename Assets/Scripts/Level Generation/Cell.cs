@@ -10,18 +10,6 @@ namespace LevelGeneration
     public class Cell : MonoBehaviour, IHeapItem<Cell>
     {
         /// <summary>
-        /// Has the decision of the final module already been propagated.
-        ///
-        /// NOTE:
-        /// This is in fact different then just having <code>Count</code> of <see cref="possibleModules"/> 1!
-        ///
-        /// For example a cell's possibility space can be given only one module from the start.
-        /// In this case <code>Count</code> of <see cref="possibleModules"/> is already 1 but the decision to chose
-        /// this only model`s object as object for the cell has not been propagated yet.
-        /// </summary>
-        public bool isFinal;
-
-        /// <summary>
         /// The possible <see cref="Module"/> objects. (Possibility space)
         /// </summary>
         public List<Module> possibleModules;
@@ -127,14 +115,23 @@ namespace LevelGeneration
             // update item on the heap
             levelGenerator.orderedCells.UpdateItem(this);
 
-            // check if it fits to already set neighbour cells
+            Collapse();
+        }
+
+        /// <summary>
+        /// Collapses the cell into its final state propagating changes to neighbours.
+        /// </summary>
+        public void Collapse()
+        {
+            // check if it fits to already collapsed neighbour cells
             for (var i = 0; i < neighbours.Length; i++)
             {
-                if (neighbours[i] == null || !neighbours[i].isFinal) continue;
+                if (neighbours[i] == null || neighbours[i].possibleModules.Count > 1) continue;
 
-                if (module.edgeConnections[i] != neighbours[i].possibleModules[0].edgeConnections[(i + 2) % 4])
+                if (possibleModules[0].edgeConnections[i] !=
+                    neighbours[i].possibleModules[0].edgeConnections[(i + 2) % 4])
                     Debug.LogError(
-                        $"Setting module {module} would not fit already set neighbour {neighbours[i].gameObject}!",
+                        $"Setting module {possibleModules[0]} would not fit already set neighbour {neighbours[i].gameObject}!",
                         gameObject);
             }
 
@@ -144,10 +141,8 @@ namespace LevelGeneration
                 if (neighbours[i] == null) continue;
 
                 // populate edge changes to neighbour cell
-                neighbours[i].FilterCell(new EdgeFilter(i, module.edgeConnections[i], true));
+                neighbours[i].FilterCell(new EdgeFilter(i, possibleModules[0].edgeConnections[i], true));
             }
-
-            isFinal = true;
         }
 
         /// <summary>

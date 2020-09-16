@@ -81,8 +81,9 @@ namespace LevelGeneration
 
                 if (cell.possibleModules.Count == 1)
                 {
+                    cell.Collapse();
+
                     // cell is already solved -> remove finished cell from heap
-                    cell.isFinal = true;
                     orderedCells.RemoveFirst();
                 }
                 else
@@ -102,6 +103,8 @@ namespace LevelGeneration
                 var t = cell.transform;
                 Instantiate(cell.possibleModules[0].moduleGO, t.position, Quaternion.identity, t);
             }
+
+            CheckGeneratedLevel();
         }
 
         /// <summary>
@@ -162,6 +165,28 @@ namespace LevelGeneration
             } while (goalCell == startCell);
 
             goalCell.SetModule(goalModule);
+        }
+
+        public void CheckGeneratedLevel()
+        {
+            for (var x = 0; x < cells.GetLength(0); x++)
+            {
+                for (var z = 0; z < cells.GetLength(1); z++)
+                {
+                    var cell = cells[x, z];
+                    var bCell = cell.neighbours[0];
+                    var rCell = cell.neighbours[1];
+
+                    if (bCell != null &&
+                        cell.possibleModules[0].edgeConnections[0] != bCell.possibleModules[0].edgeConnections[2])
+                        Debug.LogWarning($"CheckGeneratedLevel | ({x}, {z}) not matching with ({x}, {z - 1})");
+
+
+                    if (rCell != null &&
+                        cell.possibleModules[0].edgeConnections[1] != rCell.possibleModules[0].edgeConnections[3])
+                        Debug.LogWarning($"CheckGeneratedLevel | ({x}, {z}) not matching with ({x + 1}, {z})");
+                }
+            }
         }
     }
 }
